@@ -10,7 +10,7 @@ const normalizeSign = (sign) => String(sign).toLowerCase();
 const normalizeType = (type) => String(type).toLowerCase();
 const normalizeDay = (day) => String(day).toUpperCase();
 
-// Remove empty / null fields from an object
+// Remove empty / null fields
 const removeEmptyFields = (obj) => {
   return Object.fromEntries(
     Object.entries(obj).filter(
@@ -19,26 +19,26 @@ const removeEmptyFields = (obj) => {
   );
 };
 
-// Format Ohmanda date for India (01 Feb 2026)
-const formatOhmandaDate = (dateStr) => {
-  if (!dateStr) return "";
+// ✅ IST date generator (AUTHORITATIVE)
+const getISTDateLabel = () => {
+  const now = new Date();
 
-  const date = new Date(dateStr);
+  const istDate = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
 
-  return date.toLocaleDateString("en-IN", {
+  return istDate.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 };
 
-// Normalize Ohmanda daily response (frontend-safe)
+// Normalize Ohmanda daily response (IST aligned)
 const normalizeOhmandaDaily = (raw) => {
-  // raw example:
-  // { sign: "leo", date: "2026-02-01", horoscope: "..." }
   return {
     horoscope_data: raw?.horoscope || "",
-    date: formatOhmandaDate(raw?.date),
+    date: getISTDateLabel(), // 🔒 IST date, NOT provider date
   };
 };
 
@@ -55,7 +55,7 @@ export const getHoroscope = async (req, res) => {
       });
     }
 
-    // 🔒 Normalize inputs
+    // Normalize inputs
     sign = normalizeSign(sign);
     type = normalizeType(type);
     day = normalizeDay(day);
@@ -63,7 +63,7 @@ export const getHoroscope = async (req, res) => {
     let responseData;
 
     // =========================
-    // DAILY → OHMANDA
+    // DAILY → OHMANDA (TEXT) + IST DATE
     // =========================
     if (type === "daily") {
       const ohmandaUrl = `${OHMANDA_BASE_URL}/${sign}`;
@@ -118,7 +118,7 @@ export const getHoroscope = async (req, res) => {
       });
     }
 
-    // ✅ Unified response (frontend unchanged)
+    // Unified response
     return res.json({
       success: true,
       type,
